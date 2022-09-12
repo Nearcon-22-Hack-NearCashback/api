@@ -1,0 +1,24 @@
+{
+  "name": "nearcon_hack_api",
+  "version": "0.0.1",
+  "description": "cashback application Nearcon22 hack",
+  "main": "index.js",
+  "repository": "git@github.com:Nearcon-22-Hack-NearCashback/api.git",
+  "author": "Den <mirloxd3@gmail.com>",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.2",
+    "express": "^4.18.1",
+    "express-validator": "^6.14.2",
+    "uuid": "^9.0.0"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.19"
+  }
+}
