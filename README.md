@@ -1,4 +1,4 @@
-# api
+# Near Casback API
 
 ##Backend application with 1 endpoint to handle our application:
 
