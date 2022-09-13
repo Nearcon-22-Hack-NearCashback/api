@@ -11,12 +11,20 @@ import {
   getComissionRateByMerchant,
   getExchangeRateByCurrency,
   getMerchantFromApiKey,
+  getNearConfig,
 } from "./utils";
+import { CashbackContract } from "./core/cashback.contract";
 
 if (!config.SECRET) throw new Error(`'SECRET' must be provided in your .env`);
 if (!config.API_KEY) throw new Error(`'API_KEY' must be provided in your .env`);
 if (!config.CLAIM_DOMAIN)
   throw new Error(`'CLAIM_DOMAIN' must be provided in your .env`);
+if (!config.PRIVATE_KEY)
+  throw new Error(`'PRIVATE_KEY' must be provided in your .env`);
+if (!config.CONTRACT_ID)
+  throw new Error(`'CONTRACT_ID' must be provided in your .env`);
+
+let contract: CashbackContract;
 
 const app = express();
 
@@ -37,7 +45,7 @@ app.post(
         CashbackCurrency
       ).join(",")}`
     ),
-  (req, res) => {
+  async (req, res) => {
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
@@ -48,6 +56,8 @@ app.post(
 
     const currency = req.body.currency as CashbackCurrency;
     const floatAmount = req.body.amount as number;
+
+    console.debug("[body]", req.body);
 
     const exchangeRate = getExchangeRateByCurrency(currency);
 
@@ -60,41 +70,44 @@ app.post(
       (floatAmount / exchangeRate) *
       (comissionRate.nominator / comissionRate.denominator);
 
-    console.log("cashbackAmountInNear", cashbackAmountInNear);
-
     const cashbackAmountYoctoNear = naj.utils.format.parseNearAmount(
       cashbackAmountInNear.toString()
     );
 
-    console.log("cashbackAmountYoctoNear", cashbackAmountYoctoNear);
+    if (!cashbackAmountYoctoNear)
+      throw new Error(`Couldn't calculate cashback amount in yoctoNear`);
+
+    console.debug("[cashbackAmountYoctoNear]", cashbackAmountYoctoNear);
 
     const keyPair = naj.utils.KeyPairEd25519.fromRandom();
 
-    const publicKey = Buffer.from(keyPair.getPublicKey().data).toString("hex");
     const privateKey = keyPair.secretKey;
 
-    /** @todo contract.createCashback(pub_key, amount) => returning cashback_id */
+    const publicKey = keyPair.publicKey.toString().replace("ed25519:", "");
 
-    const cashbackId = "271";
-
-    // const payload = {
-    //   merchant_id: config.MOCK_MERCHANT_ID,
-    //   cashback_amount: 1.15,
-    //   currency: "eur",
-    //   cashback_id: uuidv4(),
-    //   creation_time: Date.now().toString(),
-    // };
+    const cashbackId = await contract.createCashback({
+      pub_key: publicKey,
+      amount: cashbackAmountYoctoNear,
+    });
 
     const link = new URL(config.CLAIM_DOMAIN);
     link.pathname = "/claim";
 
-    link.searchParams.set("key", privateKey);
-    link.searchParams.set("id", cashbackId);
+    link.searchParams.set("key", privateKey.toString());
+    link.searchParams.set("id", cashbackId.toString());
 
     return res.status(200).end(link.toString());
   }
 );
 
-app.listen(config.PORT, () => {
-  console.log(`App listening on port ${config.PORT}`);
-});
+(async () => {
+  const near = await naj.connect(getNearConfig(config.NETWORK));
+
+  const account = new naj.Account(near.connection, config.CONTRACT_ID);
+
+  contract = new CashbackContract(account, config.CONTRACT_ID);
+
+  app.listen(config.PORT, () => {
+    console.log(`App listening on port ${config.PORT}`);
+  });
+})();
