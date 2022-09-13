@@ -2,7 +2,6 @@ export * from "./prices";
 
 export default {
   PORT: process.env.PORT,
-  SECRET: process.env.SECRET || "",
   API_KEY: process.env.API_KEY || "",
   CLAIM_DOMAIN: process.env.CLAIM_DOMAIN || "",
   PRIVATE_KEY: process.env.PRIVATE_KEY || "",

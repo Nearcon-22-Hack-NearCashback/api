@@ -15,7 +15,6 @@ import {
 } from "./utils";
 import { CashbackContract } from "./core/cashback.contract";
 
-if (!config.SECRET) throw new Error(`'SECRET' must be provided in your .env`);
 if (!config.API_KEY) throw new Error(`'API_KEY' must be provided in your .env`);
 if (!config.CLAIM_DOMAIN)
   throw new Error(`'CLAIM_DOMAIN' must be provided in your .env`);
